@@ -1,11 +1,12 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:10705';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/auth`,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -26,10 +27,19 @@ export interface User {
   email: string;
 }
 
-export interface AuthResponse {
+export interface LoginResponse {
   token: string;
-  user?: User;
-  message?: string;
+  user: User;
+}
+
+export interface RegisterResponse {
+  id: string;
+  username: string;
+  email: string;
+}
+
+export interface DeleteResponse {
+  message: string;
 }
 
 export interface UpdateUserData {
@@ -39,38 +49,47 @@ export interface UpdateUserData {
 
 class AuthService {
   private getToken(): string | null {
-    return localStorage.getItem('token');
+    return localStorage.getItem("token");
   }
 
   private setToken(token: string): void {
-    localStorage.setItem('token', token);
+    localStorage.setItem("token", token);
   }
 
   private removeToken(): void {
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
   }
 
-  async register(data: RegisterData): Promise<AuthResponse> {
+  async register(data: RegisterData): Promise<RegisterResponse> {
     try {
-      const response = await api.post<AuthResponse>('/register', data);
-      if (response.data.token) {
-        this.setToken(response.data.token);
+      const response = await api.post<RegisterResponse>("/register", data);
+      // Registration doesn't return a token, so we need to login after registration
+      // Auto-login the user after successful registration
+      try {
+        await this.login({
+          username: data.username,
+          password: data.password,
+        });
+      } catch (loginError) {
+        // If auto-login fails, return the registration response anyway
+        // The user can manually login
+        console.warn("Auto-login after registration failed:", loginError);
       }
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Registration failed');
+      throw new Error(error.response?.data?.message || "Registration failed");
     }
   }
 
-  async login(data: LoginData): Promise<AuthResponse> {
+  async login(data: LoginData): Promise<LoginResponse> {
     try {
-      const response = await api.post<AuthResponse>('/login', data);
+      const response = await api.post<LoginResponse>("/login", data);
       if (response.data.token) {
         this.setToken(response.data.token);
       }
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Login failed');
+      throw new Error(error.response?.data?.message || "Login failed");
     }
   }
 
@@ -78,16 +97,16 @@ class AuthService {
     try {
       const token = this.getToken();
       if (!token) {
-        throw new Error('No token found');
+        throw new Error("No token found");
       }
-      const response = await api.get<User>('/getuser', {
+      const response = await api.get<User>("/getuser", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to get user');
+      throw new Error(error.response?.data?.message || "Failed to get user");
     }
   }
 
@@ -95,33 +114,34 @@ class AuthService {
     try {
       const token = this.getToken();
       if (!token) {
-        throw new Error('No token found');
+        throw new Error("No token found");
       }
-      const response = await api.put<User>('/updateuser', data, {
+      const response = await api.put<User>("/updateuser", data, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to update user');
+      throw new Error(error.response?.data?.message || "Failed to update user");
     }
   }
 
-  async deleteUser(): Promise<void> {
+  async deleteUser(): Promise<DeleteResponse> {
     try {
       const token = this.getToken();
       if (!token) {
-        throw new Error('No token found');
+        throw new Error("No token found");
       }
-      await api.delete('/deleteuser', {
+      const response = await api.delete<DeleteResponse>("/deleteuser", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       this.logout();
+      return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to delete user');
+      throw new Error(error.response?.data?.message || "Failed to delete user");
     }
   }
 
@@ -139,4 +159,3 @@ class AuthService {
 }
 
 export const authService = new AuthService();
-
