@@ -66,16 +66,21 @@ class AuthService {
       // Registration doesn't return a token, so we need to login after registration
       // Auto-login the user after successful registration
       try {
-        await this.login({
+        const loginResponse = await this.login({
           username: data.username,
           password: data.password,
         });
+        // User ID is already stored in login method
+        return response.data;
       } catch (loginError) {
-        // If auto-login fails, return the registration response anyway
+        // If auto-login fails, store user ID from registration response
+        if (response.data.id) {
+          localStorage.setItem("userId", response.data.id);
+        }
         // The user can manually login
         console.warn("Auto-login after registration failed:", loginError);
+        return response.data;
       }
-      return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Registration failed");
     }
@@ -86,6 +91,10 @@ class AuthService {
       const response = await api.post<LoginResponse>("/login", data);
       if (response.data.token) {
         this.setToken(response.data.token);
+        // Store user ID for easy access
+        if (response.data.user?.id) {
+          localStorage.setItem("userId", response.data.user.id);
+        }
       }
       return response.data;
     } catch (error: any) {
@@ -147,6 +156,7 @@ class AuthService {
 
   logout(): void {
     this.removeToken();
+    localStorage.removeItem("userId");
   }
 
   isAuthenticated(): boolean {
@@ -155,6 +165,10 @@ class AuthService {
 
   getAuthToken(): string | null {
     return this.getToken();
+  }
+
+  getUserId(): string | null {
+    return localStorage.getItem("userId");
   }
 }
 

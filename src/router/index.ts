@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import AuthPage from '../views/AuthPage.vue';
 import Dashboard from '../views/Dashboard.vue';
+import ProfilePage from '../views/ProfilePage.vue';
 import { authService } from '../services/authService';
 
 const router = createRouter({
@@ -20,6 +21,12 @@ const router = createRouter({
       path: '/dashboard',
       name: 'Dashboard',
       component: Dashboard,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/profile',
+      name: 'Profile',
+      component: ProfilePage,
       meta: { requiresAuth: true },
     },
   ],
