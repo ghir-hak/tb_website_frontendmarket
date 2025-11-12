@@ -2,7 +2,8 @@ import axios, { AxiosError } from "axios";
 import { authService } from "./authService";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || window.location.origin;
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://xwu5thnr1.g.e-marketplace.localtau:10305";
 
 const api = axios.create({
   headers: {
@@ -98,7 +99,7 @@ class UserService {
     newPassword: string
   ): Promise<{ message: string }> {
     try {
-      const response = await api.post<{ message: string }>(
+      const response = await api.put<{ message: string }>(
         `${API_BASE_URL}/api/users?id=${encodeURIComponent(
           userId
         )}&action=password`,
