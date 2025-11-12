@@ -66,7 +66,7 @@ class AuthService {
       // Registration doesn't return a token, so we need to login after registration
       // Auto-login the user after successful registration
       try {
-        const loginResponse = await this.login({
+        await this.login({
           username: data.username,
           password: data.password,
         });
