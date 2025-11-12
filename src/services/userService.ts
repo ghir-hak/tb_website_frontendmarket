@@ -58,7 +58,7 @@ class UserService {
   async getUserProfile(userId: string): Promise<UserProfile> {
     try {
       const response = await api.get<UserProfile>(
-        `?id=${encodeURIComponent(userId)}`,
+        `/?id=${encodeURIComponent(userId)}`,
         {
           headers: this.getAuthHeaders(),
         }
@@ -86,7 +86,7 @@ class UserService {
   ): Promise<UserProfile> {
     try {
       const response = await api.put<UserProfile>(
-        `?id=${encodeURIComponent(userId)}`,
+        `/?id=${encodeURIComponent(userId)}`,
         data,
         {
           headers: this.getAuthHeaders(),
