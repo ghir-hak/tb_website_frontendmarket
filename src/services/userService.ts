@@ -4,101 +4,13 @@ import { authService } from "./authService";
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
-// Create axios instance WITHOUT baseURL to avoid trailing slash issues
 const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Helper to build full URL
-const buildUrl = (queryString: string): string => {
-  return `${API_BASE_URL}/api/users${queryString}`;
-};
-
-// Error types
-export class UserServiceError extends Error {
-  statusCode?: number;
-  originalError?: unknown;
-
-  constructor(message: string, statusCode?: number, originalError?: unknown) {
-    super(message);
-    this.name = "UserServiceError";
-    this.statusCode = statusCode;
-    this.originalError = originalError;
-  }
-}
-
-// Helper to extract error message from axios error
-const extractErrorMessage = (error: unknown): string => {
-  if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{
-      error?: string;
-      message?: string;
-    }>;
-    if (axiosError.response?.data?.error) {
-      return axiosError.response.data.error;
-    }
-    if (axiosError.response?.data?.message) {
-      return axiosError.response.data.message;
-    }
-    if (axiosError.message) {
-      return axiosError.message;
-    }
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "An unexpected error occurred";
-};
-
-// Helper to handle API errors with proper error messages
-const handleApiError = (error: unknown, defaultMessage: string): never => {
-  if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ error?: string }>;
-    const statusCode = axiosError.response?.status;
-
-    switch (statusCode) {
-      case 401:
-        throw new UserServiceError(
-          "Authentication failed. Please login again.",
-          401,
-          error
-        );
-      case 403:
-        throw new UserServiceError(
-          "You don't have permission to perform this action.",
-          403,
-          error
-        );
-      case 400:
-        throw new UserServiceError(
-          extractErrorMessage(error) || "Invalid request data.",
-          400,
-          error
-        );
-      case 404:
-        throw new UserServiceError(
-          extractErrorMessage(error) || "Resource not found.",
-          404,
-          error
-        );
-      default:
-        throw new UserServiceError(
-          extractErrorMessage(error) || defaultMessage,
-          statusCode,
-          error
-        );
-    }
-  }
-  throw new UserServiceError(
-    extractErrorMessage(error) || defaultMessage,
-    undefined,
-    error
-  );
-};
-
-// Types
+// Types matching backend models
 export interface UserProfile {
   id: string;
   name: string;
@@ -112,7 +24,7 @@ export interface UserProfile {
 export interface Preferences {
   language?: string;
   notifications?: boolean;
-  displayMode?: string; // "light" or "dark"
+  displayMode?: string;
 }
 
 export interface UpdateProfileData {
@@ -120,10 +32,6 @@ export interface UpdateProfileData {
   email?: string;
   phone?: string;
   address?: string;
-}
-
-export interface ChangePasswordData {
-  newPassword: string;
 }
 
 export interface UpdatePreferencesData {
@@ -136,25 +44,36 @@ class UserService {
   private getAuthHeaders() {
     const token = authService.getAuthToken();
     if (!token) {
-      throw new UserServiceError("No authentication token found");
+      throw new Error("No authentication token found");
     }
     return {
       Authorization: `Bearer ${token}`,
     };
   }
 
+  private handleError(error: unknown): never {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message =
+        axiosError.response?.data?.error ||
+        axiosError.message ||
+        "Request failed";
+      throw new Error(message);
+    }
+    throw error instanceof Error
+      ? error
+      : new Error("An unexpected error occurred");
+  }
+
   async getUserProfile(userId: string): Promise<UserProfile> {
     try {
       const response = await api.get<UserProfile>(
-        buildUrl(`?id=${encodeURIComponent(userId)}`),
-        {
-          headers: this.getAuthHeaders(),
-        }
+        `${API_BASE_URL}/api/users?id=${encodeURIComponent(userId)}`,
+        { headers: this.getAuthHeaders() }
       );
       return response.data;
     } catch (error) {
-      handleApiError(error, "Failed to get user profile");
-      throw error; // This will never be reached, but satisfies TypeScript
+      this.handleError(error);
     }
   }
 
@@ -164,16 +83,13 @@ class UserService {
   ): Promise<UserProfile> {
     try {
       const response = await api.put<UserProfile>(
-        buildUrl(`?id=${encodeURIComponent(userId)}`),
+        `${API_BASE_URL}/api/users?id=${encodeURIComponent(userId)}`,
         data,
-        {
-          headers: this.getAuthHeaders(),
-        }
+        { headers: this.getAuthHeaders() }
       );
       return response.data;
     } catch (error) {
-      handleApiError(error, "Failed to update user profile");
-      throw error; // This will never be reached, but satisfies TypeScript
+      this.handleError(error);
     }
   }
 
@@ -183,16 +99,15 @@ class UserService {
   ): Promise<{ message: string }> {
     try {
       const response = await api.post<{ message: string }>(
-        buildUrl(`?id=${encodeURIComponent(userId)}&action=password`),
+        `${API_BASE_URL}/api/users?id=${encodeURIComponent(
+          userId
+        )}&action=password`,
         { newPassword },
-        {
-          headers: this.getAuthHeaders(),
-        }
+        { headers: this.getAuthHeaders() }
       );
       return response.data;
     } catch (error) {
-      handleApiError(error, "Failed to change password");
-      throw error; // This will never be reached, but satisfies TypeScript
+      this.handleError(error);
     }
   }
 
@@ -202,16 +117,15 @@ class UserService {
   ): Promise<UserProfile> {
     try {
       const response = await api.put<UserProfile>(
-        buildUrl(`?id=${encodeURIComponent(userId)}&action=preferences`),
+        `${API_BASE_URL}/api/users?id=${encodeURIComponent(
+          userId
+        )}&action=preferences`,
         preferences,
-        {
-          headers: this.getAuthHeaders(),
-        }
+        { headers: this.getAuthHeaders() }
       );
       return response.data;
     } catch (error) {
-      handleApiError(error, "Failed to update preferences");
-      throw error; // This will never be reached, but satisfies TypeScript
+      this.handleError(error);
     }
   }
 }
