@@ -4,12 +4,17 @@ import { authService } from "./authService";
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
+// Create axios instance WITHOUT baseURL to avoid trailing slash issues
 const api = axios.create({
-  baseURL: `${API_BASE_URL}/api/users`,
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+// Helper to build full URL
+const buildUrl = (queryString: string): string => {
+  return `${API_BASE_URL}/api/users${queryString}`;
+};
 
 export interface UserProfile {
   id: string;
@@ -58,7 +63,7 @@ class UserService {
   async getUserProfile(userId: string): Promise<UserProfile> {
     try {
       const response = await api.get<UserProfile>(
-        `?id=${encodeURIComponent(userId)}`,
+        buildUrl(`?id=${encodeURIComponent(userId)}`),
         {
           headers: this.getAuthHeaders(),
         }
@@ -86,7 +91,7 @@ class UserService {
   ): Promise<UserProfile> {
     try {
       const response = await api.put<UserProfile>(
-        `?id=${encodeURIComponent(userId)}`,
+        buildUrl(`?id=${encodeURIComponent(userId)}`),
         data,
         {
           headers: this.getAuthHeaders(),
@@ -115,7 +120,7 @@ class UserService {
   ): Promise<{ message: string }> {
     try {
       const response = await api.post<{ message: string }>(
-        `?id=${encodeURIComponent(userId)}&action=password`,
+        buildUrl(`?id=${encodeURIComponent(userId)}&action=password`),
         { newPassword },
         {
           headers: this.getAuthHeaders(),
@@ -144,7 +149,7 @@ class UserService {
   ): Promise<UserProfile> {
     try {
       const response = await api.put<UserProfile>(
-        `?id=${encodeURIComponent(userId)}&action=preferences`,
+        buildUrl(`?id=${encodeURIComponent(userId)}&action=preferences`),
         preferences,
         {
           headers: this.getAuthHeaders(),
