@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { authService } from "./authService";
 
 const API_BASE_URL =
@@ -16,6 +16,89 @@ const buildUrl = (queryString: string): string => {
   return `${API_BASE_URL}/api/users${queryString}`;
 };
 
+// Error types
+export class UserServiceError extends Error {
+  statusCode?: number;
+  originalError?: unknown;
+
+  constructor(message: string, statusCode?: number, originalError?: unknown) {
+    super(message);
+    this.name = "UserServiceError";
+    this.statusCode = statusCode;
+    this.originalError = originalError;
+  }
+}
+
+// Helper to extract error message from axios error
+const extractErrorMessage = (error: unknown): string => {
+  if (axios.isAxiosError(error)) {
+    const axiosError = error as AxiosError<{
+      error?: string;
+      message?: string;
+    }>;
+    if (axiosError.response?.data?.error) {
+      return axiosError.response.data.error;
+    }
+    if (axiosError.response?.data?.message) {
+      return axiosError.response.data.message;
+    }
+    if (axiosError.message) {
+      return axiosError.message;
+    }
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "An unexpected error occurred";
+};
+
+// Helper to handle API errors with proper error messages
+const handleApiError = (error: unknown, defaultMessage: string): never => {
+  if (axios.isAxiosError(error)) {
+    const axiosError = error as AxiosError<{ error?: string }>;
+    const statusCode = axiosError.response?.status;
+
+    switch (statusCode) {
+      case 401:
+        throw new UserServiceError(
+          "Authentication failed. Please login again.",
+          401,
+          error
+        );
+      case 403:
+        throw new UserServiceError(
+          "You don't have permission to perform this action.",
+          403,
+          error
+        );
+      case 400:
+        throw new UserServiceError(
+          extractErrorMessage(error) || "Invalid request data.",
+          400,
+          error
+        );
+      case 404:
+        throw new UserServiceError(
+          extractErrorMessage(error) || "Resource not found.",
+          404,
+          error
+        );
+      default:
+        throw new UserServiceError(
+          extractErrorMessage(error) || defaultMessage,
+          statusCode,
+          error
+        );
+    }
+  }
+  throw new UserServiceError(
+    extractErrorMessage(error) || defaultMessage,
+    undefined,
+    error
+  );
+};
+
+// Types
 export interface UserProfile {
   id: string;
   name: string;
@@ -53,7 +136,7 @@ class UserService {
   private getAuthHeaders() {
     const token = authService.getAuthToken();
     if (!token) {
-      throw new Error("No authentication token found");
+      throw new UserServiceError("No authentication token found");
     }
     return {
       Authorization: `Bearer ${token}`,
@@ -69,19 +152,9 @@ class UserService {
         }
       );
       return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error("Authentication failed. Please login again.");
-      } else if (error.response?.status === 403) {
-        throw new Error("You don't have permission to access this profile.");
-      } else if (error.response?.status === 404) {
-        throw new Error("Profile not found.");
-      } else if (error.response?.data?.error) {
-        throw new Error(error.response.data.error);
-      }
-      throw new Error(
-        error.response?.data?.message || "Failed to get user profile"
-      );
+    } catch (error) {
+      handleApiError(error, "Failed to get user profile");
+      throw error; // This will never be reached, but satisfies TypeScript
     }
   }
 
@@ -98,19 +171,9 @@ class UserService {
         }
       );
       return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error("Authentication failed. Please login again.");
-      } else if (error.response?.status === 403) {
-        throw new Error("You don't have permission to update this profile.");
-      } else if (error.response?.status === 400) {
-        throw new Error(error.response?.data?.error || "Invalid request data.");
-      } else if (error.response?.data?.error) {
-        throw new Error(error.response.data.error);
-      }
-      throw new Error(
-        error.response?.data?.message || "Failed to update user profile"
-      );
+    } catch (error) {
+      handleApiError(error, "Failed to update user profile");
+      throw error; // This will never be reached, but satisfies TypeScript
     }
   }
 
@@ -127,19 +190,9 @@ class UserService {
         }
       );
       return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error("Authentication failed. Please login again.");
-      } else if (error.response?.status === 403) {
-        throw new Error("You don't have permission to change this password.");
-      } else if (error.response?.status === 400) {
-        throw new Error(error.response?.data?.error || "Invalid password.");
-      } else if (error.response?.data?.error) {
-        throw new Error(error.response.data.error);
-      }
-      throw new Error(
-        error.response?.data?.message || "Failed to change password"
-      );
+    } catch (error) {
+      handleApiError(error, "Failed to change password");
+      throw error; // This will never be reached, but satisfies TypeScript
     }
   }
 
@@ -156,21 +209,9 @@ class UserService {
         }
       );
       return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error("Authentication failed. Please login again.");
-      } else if (error.response?.status === 403) {
-        throw new Error("You don't have permission to update preferences.");
-      } else if (error.response?.status === 400) {
-        throw new Error(
-          error.response?.data?.error || "Invalid preferences data."
-        );
-      } else if (error.response?.data?.error) {
-        throw new Error(error.response.data.error);
-      }
-      throw new Error(
-        error.response?.data?.message || "Failed to update preferences"
-      );
+    } catch (error) {
+      handleApiError(error, "Failed to update preferences");
+      throw error; // This will never be reached, but satisfies TypeScript
     }
   }
 }
