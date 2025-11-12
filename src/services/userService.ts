@@ -57,10 +57,12 @@ class UserService {
 
   async getUserProfile(userId: string): Promise<UserProfile> {
     try {
-      const response = await api.get<UserProfile>("", {
-        params: { id: userId },
-        headers: this.getAuthHeaders(),
-      });
+      const response = await api.get<UserProfile>(
+        `?id=${encodeURIComponent(userId)}`,
+        {
+          headers: this.getAuthHeaders(),
+        }
+      );
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -83,10 +85,13 @@ class UserService {
     data: UpdateProfileData
   ): Promise<UserProfile> {
     try {
-      const response = await api.put<UserProfile>("", data, {
-        params: { id: userId },
-        headers: this.getAuthHeaders(),
-      });
+      const response = await api.put<UserProfile>(
+        `?id=${encodeURIComponent(userId)}`,
+        data,
+        {
+          headers: this.getAuthHeaders(),
+        }
+      );
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -110,10 +115,9 @@ class UserService {
   ): Promise<{ message: string }> {
     try {
       const response = await api.post<{ message: string }>(
-        "",
+        `?id=${encodeURIComponent(userId)}&action=password`,
         { newPassword },
         {
-          params: { id: userId, action: "password" },
           headers: this.getAuthHeaders(),
         }
       );
@@ -139,10 +143,13 @@ class UserService {
     preferences: UpdatePreferencesData
   ): Promise<UserProfile> {
     try {
-      const response = await api.put<UserProfile>("", preferences, {
-        params: { id: userId, action: "preferences" },
-        headers: this.getAuthHeaders(),
-      });
+      const response = await api.put<UserProfile>(
+        `?id=${encodeURIComponent(userId)}&action=preferences`,
+        preferences,
+        {
+          headers: this.getAuthHeaders(),
+        }
+      );
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 401) {
