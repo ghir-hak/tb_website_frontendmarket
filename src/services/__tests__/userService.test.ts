@@ -1,13 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock axios - must be before imports
-// Create the mock instance entirely inside the factory
-const mockAxiosInstance = {
-  get: vi.fn(),
-  put: vi.fn(),
-  post: vi.fn(),
-};
-
 vi.mock("axios", async () => {
   const actual = await vi.importActual("axios");
   // Create a new instance for each test run
