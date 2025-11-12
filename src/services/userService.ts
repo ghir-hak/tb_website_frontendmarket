@@ -57,7 +57,8 @@ class UserService {
 
   async getUserProfile(userId: string): Promise<UserProfile> {
     try {
-      const response = await api.get<UserProfile>(`?id=${encodeURIComponent(userId)}`, {
+      const response = await api.get<UserProfile>("", {
+        params: { id: userId },
         headers: this.getAuthHeaders(),
       });
       return response.data;
@@ -71,13 +72,19 @@ class UserService {
       } else if (error.response?.data?.error) {
         throw new Error(error.response.data.error);
       }
-      throw new Error(error.response?.data?.message || "Failed to get user profile");
+      throw new Error(
+        error.response?.data?.message || "Failed to get user profile"
+      );
     }
   }
 
-  async updateUserProfile(userId: string, data: UpdateProfileData): Promise<UserProfile> {
+  async updateUserProfile(
+    userId: string,
+    data: UpdateProfileData
+  ): Promise<UserProfile> {
     try {
-      const response = await api.put<UserProfile>(`?id=${encodeURIComponent(userId)}`, data, {
+      const response = await api.put<UserProfile>("", data, {
+        params: { id: userId },
         headers: this.getAuthHeaders(),
       });
       return response.data;
@@ -91,16 +98,22 @@ class UserService {
       } else if (error.response?.data?.error) {
         throw new Error(error.response.data.error);
       }
-      throw new Error(error.response?.data?.message || "Failed to update user profile");
+      throw new Error(
+        error.response?.data?.message || "Failed to update user profile"
+      );
     }
   }
 
-  async changePassword(userId: string, newPassword: string): Promise<{ message: string }> {
+  async changePassword(
+    userId: string,
+    newPassword: string
+  ): Promise<{ message: string }> {
     try {
       const response = await api.post<{ message: string }>(
-        `?id=${encodeURIComponent(userId)}&action=password`,
+        "",
         { newPassword },
         {
+          params: { id: userId, action: "password" },
           headers: this.getAuthHeaders(),
         }
       );
@@ -115,19 +128,21 @@ class UserService {
       } else if (error.response?.data?.error) {
         throw new Error(error.response.data.error);
       }
-      throw new Error(error.response?.data?.message || "Failed to change password");
+      throw new Error(
+        error.response?.data?.message || "Failed to change password"
+      );
     }
   }
 
-  async updatePreferences(userId: string, preferences: UpdatePreferencesData): Promise<UserProfile> {
+  async updatePreferences(
+    userId: string,
+    preferences: UpdatePreferencesData
+  ): Promise<UserProfile> {
     try {
-      const response = await api.put<UserProfile>(
-        `?id=${encodeURIComponent(userId)}&action=preferences`,
-        preferences,
-        {
-          headers: this.getAuthHeaders(),
-        }
-      );
+      const response = await api.put<UserProfile>("", preferences, {
+        params: { id: userId, action: "preferences" },
+        headers: this.getAuthHeaders(),
+      });
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -135,14 +150,17 @@ class UserService {
       } else if (error.response?.status === 403) {
         throw new Error("You don't have permission to update preferences.");
       } else if (error.response?.status === 400) {
-        throw new Error(error.response?.data?.error || "Invalid preferences data.");
+        throw new Error(
+          error.response?.data?.error || "Invalid preferences data."
+        );
       } else if (error.response?.data?.error) {
         throw new Error(error.response.data.error);
       }
-      throw new Error(error.response?.data?.message || "Failed to update preferences");
+      throw new Error(
+        error.response?.data?.message || "Failed to update preferences"
+      );
     }
   }
 }
 
 export const userService = new UserService();
-
