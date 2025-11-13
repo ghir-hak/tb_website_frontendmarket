@@ -100,9 +100,7 @@ class UserService {
   ): Promise<{ message: string }> {
     try {
       const response = await api.put<{ message: string }>(
-        `${API_BASE_URL}/api/users?id=${encodeURIComponent(
-          userId
-        )}&action=password`,
+        `${API_BASE_URL}/api/changePassword?id=${encodeURIComponent(userId)}`,
         { newPassword },
         { headers: this.getAuthHeaders() }
       );
@@ -118,9 +116,9 @@ class UserService {
   ): Promise<UserProfile> {
     try {
       const response = await api.put<UserProfile>(
-        `${API_BASE_URL}/api/users?id=${encodeURIComponent(
+        `${API_BASE_URL}/api/updatePreferences?id=${encodeURIComponent(
           userId
-        )}&action=preferences`,
+        )}`,
         preferences,
         { headers: this.getAuthHeaders() }
       );
