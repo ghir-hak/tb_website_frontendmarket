@@ -116,7 +116,7 @@ class UserService {
   ): Promise<UserProfile> {
     try {
       const response = await api.put<UserProfile>(
-        `${API_BASE_URL}/api/users/preferences?id=${encodeURIComponent(
+        `${API_BASE_URL}/api/users/preferences123?id=${encodeURIComponent(
           userId
         )}`,
         preferences,
